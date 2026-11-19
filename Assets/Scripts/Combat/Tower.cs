@@ -7,6 +7,9 @@ public class Tower : MonoBehaviour
     public float fireRate = 1f;        // Ile razy na sekundę strzela (1 = raz na sekundę)
     public float damage = 1f;          // Ile obrażeń zadaje
 
+    [Header("Komponenty")]
+    public Transform partToRotate;     // Obiekt/lufa, który ma się obracać w stronę wroga (jeśli null, obraca się cała wieża)
+
     private float fireCountdown = 0f;
 
     void Update()
@@ -26,17 +29,10 @@ public class Tower : MonoBehaviour
             }
         }
 
-        // 2. Jeśli wróg jest w zasięgu, strzelaj
+        // 2. Jeśli wróg jest w zasięgu, obracaj się i strzelaj
         if (closestEnemy != null && shortestDistance <= range)
         {
-            // Obracanie wieży w stronę wroga (żeby lufa patrzyła w cel)
-            Vector3 direction = closestEnemy.position - transform.position;
-            direction.y = 0; // Blokujemy pochylanie w górę/dół
-            if (direction != Vector3.zero)
-            {
-                Quaternion lookRotation = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10f);
-            }
+            RotateTowards(closestEnemy);
 
             // Licznik czasu do strzału
             if (fireCountdown <= 0f)
@@ -47,6 +43,21 @@ public class Tower : MonoBehaviour
         }
 
         fireCountdown -= Time.deltaTime;
+    }
+
+    void RotateTowards(Transform target)
+    {
+        Vector3 direction = target.position - transform.position;
+        direction.y = 0; // Blokujemy pochylanie w górę/dół
+
+        if (direction != Vector3.zero)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(direction);
+
+            // Jeśli mamy przypisaną osobną lufę/głowę do obracania, obracamy ją. Jak nie, obracamy cały obiekt.
+            Transform targetToRotate = partToRotate != null ? partToRotate : transform;
+            targetToRotate.rotation = Quaternion.Slerp(targetToRotate.rotation, lookRotation, Time.deltaTime * 10f);
+        }
     }
 
     void Shoot(Transform target)

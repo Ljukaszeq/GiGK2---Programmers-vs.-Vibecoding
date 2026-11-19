@@ -3,15 +3,14 @@ using UnityEngine;
 public class EnemyPathing : MonoBehaviour
 {
     [Header("Ustawienia Wroga")]
-    public Transform[] waypoints; // Tablica punktów, po których idzie wróg
+    public Transform[] waypoints; // Tablica punktów trasy
     public float moveSpeed = 3f;  // Prędkość poruszania się
-    public float rotationSpeed = 5f; // Jak szybko wróg się obraca w stronę kolejnego punktu
+    public float rotationSpeed = 5f; // Jak szybko wróg się obraca
 
-    private int currentWaypointIndex = 0; // Indeks aktualnego celu
+    private int currentWaypointIndex = 0;
 
     void Start()
     {
-        // Ustawiamy wroga na pozycji startowej (pierwszy punkt)
         if (waypoints.Length > 0)
         {
             transform.position = waypoints[0].position;
@@ -20,30 +19,39 @@ public class EnemyPathing : MonoBehaviour
 
     void Update()
     {
-        // Jeśli wróg dotarł do końca trasy (nie ma już więcej punktów), kończymy
-        if (currentWaypointIndex >= waypoints.Length)
+        if (waypoints.Length == 0 || currentWaypointIndex >= waypoints.Length)
         {
             return;
         }
 
-        // Pobieramy pozycję aktualnego celu
         Transform targetWaypoint = waypoints[currentWaypointIndex];
 
-        // 1. Poruszanie się w stronę celu (bez wpływu fizyki)
+        // 1. Poruszanie się w stronę celu
         transform.position = Vector3.MoveTowards(transform.position, targetWaypoint.position, moveSpeed * Time.deltaTime);
 
-        // 2. Obracanie się w stronę celu (żeby "patrzył" przodem)
+        // 2. Obracanie się w stronę celu
         Vector3 direction = targetWaypoint.position - transform.position;
-        if (direction != Vector3.zero) // Zapobiega błędom, gdyby wektory były zerowe
+        direction.y = 0; // Blokujemy pochylanie w pionie
+        if (direction != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
-        // 3. Sprawdzanie, czy wróg dotarł do celu (z małym marginesem błędu)
-        if (Vector3.Distance(transform.position, targetWaypoint.position) < 0.1f)
+        // 3. Sprawdzanie, czy wróg dotarł do punktu
+        if (Vector3.Distance(transform.position, targetWaypoint.position) < 0.2f)
         {
-            currentWaypointIndex++; // Przechodzimy do kolejnego punktu
+            currentWaypointIndex++;
+
+            // Jeśli dotarliśmy do ostatniego waypointa, spróbujmy skierować wroga bezpośrednio na bazę (jeśli jest na scenie)
+            if (currentWaypointIndex >= waypoints.Length)
+            {
+                GameObject baseObj = GameObject.FindWithTag("Baza"); // Szukamy bazy po tagu
+                if (baseObj != null)
+                {
+                    // Możemy dodać bazę jako ostatni cel lub obsłużyć to w OnTrigger w bazie
+                }
+            }
         }
     }
 }
